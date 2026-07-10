@@ -35,3 +35,20 @@ This site will be monetized with display ads targeting a highly engaged audience
 *   Style these placeholders with a dashed border, a light gray background, and centered text that says "Advertisement Space (Auto-Refreshing)".
 
 Please output the complete HTML code.
+
+---
+
+## 🚀 Future Feature Roadmap / Idea Backlog
+
+### Idea 1: The "Typing Speed Test" Minigame (Proposed)
+**Concept:** Turn the Word Counter into an interactive, gamified typing tutor.
+**How it works:**
+1. We add a button called **"Take Typing Test"** near the top of the editor.
+2. When clicked, the main text area clears out and displays a randomly generated, famous English paragraph or quote (e.g., from literature or history).
+3. A **60-second countdown timer** appears on the screen.
+4. As soon as the user starts typing, the timer begins. The text area will highlight words in green if typed correctly, and red if misspelled.
+5. When the timer hits zero, the text area locks, and the sidebar statistics board transforms to show their **Words Per Minute (WPM)** and **Accuracy Percentage**.
+
+**Why this is brilliant:**
+*   **Massive User Retention:** People love typing tests. They will stay on your website for 10-15 minutes trying to beat their high score, which Google AdSense algorithms *love*. High retention = higher ad revenue.
+*   **Completely Unique:** No other basic word counter offers a built-in typing speed challenge.

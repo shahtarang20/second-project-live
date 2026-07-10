@@ -153,6 +153,13 @@
                 <button onclick="transformText('uppercase')" class="px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">UPPERCASE</button>
                 <button onclick="transformText('lowercase')" class="px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">lowercase</button>
                 <button onclick="transformText('titlecase')" class="px-3 py-2 text-sm font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">Title Case</button>
+                
+                <div class="w-px bg-slate-300 dark:bg-slate-600 mx-1 hidden sm:block"></div>
+                
+                <button onclick="startTypingTest()" id="typingTestBtn" class="px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 border border-transparent text-white hover:bg-emerald-600 transition-all shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Take Typing Test
+                </button>
             </div>
 
             <!-- Mobile Ad Placeholder (Below actions) -->
@@ -163,9 +170,22 @@
                 </div>
             </div>
 
+            <!-- Typing Test Game Board (Hidden by default) -->
+            <div id="typingTestBoard" class="hidden flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 border-emerald-500 overflow-hidden min-h-[150px] relative mb-6">
+                <div class="absolute top-4 right-6 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold px-4 py-1 rounded-full text-xl shadow-sm border border-emerald-200 dark:border-emerald-700">
+                    <span id="typingTimer">60</span>s
+                </div>
+                <div class="p-6">
+                    <h3 class="text-sm font-bold text-emerald-600 uppercase tracking-wide mb-2">Typing Speed Test</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">Type the text below as fast as you can. The timer starts on your first keystroke.</p>
+                    <div id="typingTargetText" class="text-lg text-slate-800 dark:text-slate-200 font-medium leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-5 rounded-lg border border-slate-200 dark:border-slate-700 select-none"></div>
+                    <button onclick="endTypingTest(true)" class="mt-4 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline font-medium transition-colors">Cancel Test</button>
+                </div>
+            </div>
+
             <!-- Editor -->
-            <div class="relative flex-grow flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
-                <textarea id="editor" class="w-full h-full flex-grow p-6 text-lg bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-shadow" placeholder="Type or paste your text here, or use the Dictate button to speak..."></textarea>
+            <div id="editorContainer" class="relative flex-grow flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
+                <textarea id="editor" class="w-full h-full flex-grow p-6 text-lg bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all" placeholder="Type or paste your text here, or use the Dictate button to speak..."></textarea>
             </div>
             
             <!-- Mobile Ad Placeholder (Bottom) -->
@@ -188,6 +208,21 @@
                     
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-5">Text Statistics</h2>
                     
+                    <!-- Typing Test Results (Hidden by default) -->
+                    <div id="typingResultsBoard" class="hidden mb-6 bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <h3 class="text-emerald-800 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-4">Test Results</h3>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-slate-700 dark:text-slate-300 font-medium">Speed (WPM):</span>
+                            <span id="resultWPM" class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">0</span>
+                        </div>
+                        <div class="w-full h-px bg-emerald-200/50 dark:bg-emerald-800/30 mb-3"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-700 dark:text-slate-300 font-medium">Accuracy:</span>
+                            <span id="resultAccuracy" class="text-xl font-bold text-emerald-600 dark:text-emerald-400">0%</span>
+                        </div>
+                    </div>
+
                     <div class="space-y-4">
                         <div class="flex justify-between items-center group">
                             <span class="text-slate-600 dark:text-slate-400 font-medium group-hover:text-indigo-600 transition-colors">Words</span>
@@ -571,8 +606,129 @@
             updateDarkModeIcon(false);
         }
 
-        // Event Listeners
-        editor.addEventListener('input', updateStats);
+        // --- Typing Test Game Logic ---
+        const quotes = [
+            "The quick brown fox jumps over the lazy dog. This sentence contains every letter in the English alphabet. It is often used for typing practice and testing.",
+            "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take arms against a sea of troubles.",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts. History is written by the victors. A joke is a very serious thing.",
+            "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity.",
+            "The greatest glory in living lies not in never falling, but in rising every time we fall. The way to get started is to quit talking and begin doing."
+        ];
+        
+        let isTypingTest = false;
+        let typingTimer = null;
+        let timeLeft = 60;
+        let hasStartedTyping = false;
+        let currentTargetText = "";
+        
+        function startTypingTest() {
+            isTypingTest = true;
+            hasStartedTyping = false;
+            timeLeft = 60;
+            
+            // UI Changes
+            document.getElementById('typingTestBoard').classList.remove('hidden');
+            document.getElementById('typingTestBoard').classList.add('flex');
+            document.getElementById('typingResultsBoard').classList.add('hidden');
+            document.getElementById('typingTimer').innerText = timeLeft;
+            
+            // Set Target
+            currentTargetText = quotes[Math.floor(Math.random() * quotes.length)];
+            renderTargetText("");
+            
+            // Clear and prepare editor
+            editor.value = "";
+            editor.placeholder = "Start typing the text above... (Timer starts on first key)";
+            editor.removeAttribute('readonly');
+            editor.focus();
+            
+            // Scroll to editor
+            document.getElementById('editorContainer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function renderTargetText(typedVal) {
+            const targetDiv = document.getElementById('typingTargetText');
+            let html = "";
+            for (let i = 0; i < currentTargetText.length; i++) {
+                const targetChar = currentTargetText[i];
+                const typedChar = typedVal[i];
+                
+                if (typedChar === undefined) {
+                    // Not typed yet
+                    html += `<span class="opacity-50">${targetChar}</span>`;
+                } else if (typedChar === targetChar) {
+                    // Correct
+                    html += `<span class="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/30">${targetChar}</span>`;
+                } else {
+                    // Incorrect
+                    html += `<span class="text-red-500 dark:text-red-400 font-bold bg-red-100 dark:bg-red-900/30">${targetChar}</span>`;
+                }
+            }
+            targetDiv.innerHTML = html;
+        }
+        
+        function endTypingTest(cancelled = false) {
+            isTypingTest = false;
+            clearInterval(typingTimer);
+            
+            document.getElementById('typingTestBoard').classList.add('hidden');
+            document.getElementById('typingTestBoard').classList.remove('flex');
+            editor.placeholder = "Type or paste your text here, or use the Dictate button to speak...";
+            editor.removeAttribute('readonly');
+            
+            if (!cancelled) {
+                // Calculate Results
+                const typed = editor.value;
+                let correctChars = 0;
+                for (let i = 0; i < typed.length && i < currentTargetText.length; i++) {
+                    if (typed[i] === currentTargetText[i]) correctChars++;
+                }
+                
+                // Words = chars / 5 (standard WPM formula). Calculate based on time spent.
+                const timeSpent = 60 - timeLeft;
+                const timeMultiplier = timeSpent > 0 ? (60 / timeSpent) : 0;
+                let wpm = Math.round((correctChars / 5) * timeMultiplier);
+                
+                let accuracy = 0;
+                if (typed.length > 0) {
+                    accuracy = Math.round((correctChars / typed.length) * 100);
+                }
+                
+                document.getElementById('resultWPM').innerText = wpm;
+                document.getElementById('resultAccuracy').innerText = accuracy + "%";
+                document.getElementById('typingResultsBoard').classList.remove('hidden');
+            } else {
+                editor.value = "";
+                updateStats();
+            }
+        }
+        
+        // Custom Input Listener that handles both Modes
+        editor.addEventListener('input', function(e) {
+            if (isTypingTest) {
+                const typedVal = editor.value;
+                renderTargetText(typedVal);
+                
+                // Start timer on first keystroke
+                if (!hasStartedTyping && typedVal.length > 0) {
+                    hasStartedTyping = true;
+                    typingTimer = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('typingTimer').innerText = timeLeft;
+                        if (timeLeft <= 0) {
+                            endTypingTest(false);
+                        }
+                    }, 1000);
+                }
+                
+                // Check if they finished early
+                if (typedVal.length >= currentTargetText.length) {
+                    endTypingTest(false);
+                }
+            } else {
+                updateStats();
+            }
+        });
         
         // Initial setup
         updateStats();
