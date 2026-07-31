@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms of Service - Easy Word Counter</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AdSense Tag -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5841910105267784" crossorigin="anonymous"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
 
@@ -44,5 +46,28 @@
             <a href="/" class="text-indigo-600 hover:underline">&larr; Back to Tool</a>
         </div>
     </div>
+    <!-- Global Cookie Consent Banner -->
+    <div id="cookieBanner" class="fixed bottom-0 left-0 w-full bg-slate-900 text-slate-200 p-4 shadow-2xl z-50 flex flex-col sm:flex-row justify-center items-center gap-4 text-sm transform transition-transform duration-500 translate-y-full">
+        <p class="text-center sm:text-left max-w-3xl">We use cookies to analyze our traffic, personalize content, and serve targeted advertisements. By clicking "Accept", you consent to our use of cookies. Read our <a href="/privacy.html" class="text-indigo-400 hover:underline">Privacy Policy</a>.</p>
+        <button onclick="acceptCookies()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-full transition-colors shrink-0">Accept</button>
+    </div>
+
+    <script>
+        // Cookie Consent Logic
+        document.addEventListener("DOMContentLoaded", function() {
+            const cookieBanner = document.getElementById('cookieBanner');
+            if (!localStorage.getItem('cookiesAccepted')) {
+                // Wait 1 second before showing banner for smooth animation
+                setTimeout(() => {
+                    cookieBanner.classList.remove('translate-y-full');
+                }, 1000);
+            }
+        });
+
+        function acceptCookies() {
+            localStorage.setItem('cookiesAccepted', 'true');
+            document.getElementById('cookieBanner').classList.add('translate-y-full');
+        }
+    </script>
 </body>
 </html>
