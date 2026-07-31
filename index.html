@@ -26,9 +26,12 @@
     <title>Free Word & Character Counter Tool</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Confetti JS for Gamification -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
+
         }
     </script>
     <style>
@@ -217,6 +220,24 @@
                     </svg>
                     Take Typing Test
                 </button>
+            </div>
+
+            <!-- Gamification Goal Setter -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex-grow w-full">
+                    <div class="flex justify-between items-end mb-2">
+                        <label for="wordGoalInput" class="text-sm font-semibold text-slate-700 dark:text-slate-300">Daily Word Goal: <span id="goalText" class="text-indigo-600 dark:text-indigo-400 font-bold">500</span></label>
+                        <span id="goalProgressText" class="text-xs text-slate-500 dark:text-slate-400 font-medium">0 / 500 words</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div id="goalProgressBar" class="bg-indigo-600 dark:bg-indigo-500 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                    <input type="number" id="wordGoalInput" value="500" min="10" step="10" class="w-20 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="setWordGoal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded transition-colors shadow-sm">Set</button>
+                </div>
             </div>
 
             <!-- Mobile Ad Placeholder (Below actions) -->
@@ -618,7 +639,7 @@
             const sortedKeywords = Object.entries(keywordCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
             keywordList.innerHTML = '';
             if (sortedKeywords.length === 0) {
-                keywordList.innerHTML = '<div class="text-sm text-slate-500 dark:text-slate-400">No keywords found yet.</div>';
+                document.getElementById('keywordList').innerHTML = '<div class="text-sm text-slate-400 dark:text-slate-500 text-center py-4">Type to see keywords</div>';
             } else {
                 sortedKeywords.forEach(([kw, count]) => {
                     const percentage = validWordCount > 0 ? Math.round((count / validWordCount) * 100) : 0;
@@ -649,6 +670,85 @@
             // Update Mobile
             mobileWords.textContent = words;
             mobileChars.textContent = charsWithSpaces;
+
+            if (typeof updateGamification === 'function') {
+                updateGamification(words);
+            }
+        }
+
+        // Gamification Logic
+        let wordGoal = parseInt(localStorage.getItem('wordGoal')) || 500;
+        let goalHitConfettiFired = false;
+        
+        function setWordGoal() {
+            const inputVal = parseInt(document.getElementById('wordGoalInput').value);
+            if (inputVal > 0) {
+                wordGoal = inputVal;
+                localStorage.setItem('wordGoal', wordGoal);
+                document.getElementById('goalText').innerText = wordGoal;
+                goalHitConfettiFired = false; // reset so they can get confetti again if they increase goal
+                updateStats(); // Force re-render
+            }
+        }
+
+        function updateGamification(currentWords) {
+            // Update Goal input if it was loaded from local storage on first load
+            document.getElementById('wordGoalInput').value = wordGoal;
+            document.getElementById('goalText').innerText = wordGoal;
+
+            document.getElementById('goalProgressText').innerText = `${currentWords} / ${wordGoal} words`;
+            
+            let percentage = (currentWords / wordGoal) * 100;
+            if (percentage > 100) percentage = 100;
+            
+            const progressBar = document.getElementById('goalProgressBar');
+            if (progressBar) {
+                progressBar.style.width = percentage + "%";
+
+                if (percentage >= 100) {
+                    progressBar.classList.remove('bg-indigo-600', 'dark:bg-indigo-500');
+                    progressBar.classList.add('bg-emerald-500', 'dark:bg-emerald-400');
+                    
+                    if (!goalHitConfettiFired && currentWords > 0) {
+                        goalHitConfettiFired = true;
+                        triggerConfetti();
+                    }
+                } else {
+                    progressBar.classList.remove('bg-emerald-500', 'dark:bg-emerald-400');
+                    progressBar.classList.add('bg-indigo-600', 'dark:bg-indigo-500');
+                    if (currentWords < wordGoal) {
+                        goalHitConfettiFired = false; // Reset if they delete words and drop below goal
+                    }
+                }
+            }
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti !== 'undefined') {
+                var duration = 3 * 1000;
+                var animationEnd = Date.now() + duration;
+                var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+
+                var interval = setInterval(function() {
+                    var timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    var particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, defaults, { particleCount,
+                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                    }));
+                    confetti(Object.assign({}, defaults, { particleCount,
+                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                    }));
+                }, 250);
+            }
         }
 
         // Action Functions
@@ -922,6 +1022,30 @@
         // Initial setup
         updateStats();
         editor.focus();
+    </script>
+
+    <!-- Global Cookie Consent Banner -->
+    <div id="cookieBanner" class="fixed bottom-0 left-0 w-full bg-slate-900 text-slate-200 p-4 shadow-2xl z-50 flex flex-col sm:flex-row justify-center items-center gap-4 text-sm transform transition-transform duration-500 translate-y-full">
+        <p class="text-center sm:text-left max-w-3xl">We use cookies to analyze our traffic, personalize content, and serve targeted advertisements. By clicking "Accept", you consent to our use of cookies. Read our <a href="/privacy.html" class="text-indigo-400 hover:underline">Privacy Policy</a>.</p>
+        <button onclick="acceptCookies()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-full transition-colors shrink-0">Accept</button>
+    </div>
+
+    <script>
+        // Cookie Consent Logic
+        document.addEventListener("DOMContentLoaded", function() {
+            const cookieBanner = document.getElementById('cookieBanner');
+            if (!localStorage.getItem('cookiesAccepted')) {
+                // Wait 1 second before showing banner for smooth animation
+                setTimeout(() => {
+                    cookieBanner.classList.remove('translate-y-full');
+                }, 1000);
+            }
+        });
+
+        function acceptCookies() {
+            localStorage.setItem('cookiesAccepted', 'true');
+            document.getElementById('cookieBanner').classList.add('translate-y-full');
+        }
     </script>
 </body>
 
