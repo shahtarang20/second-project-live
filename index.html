@@ -1011,6 +1011,11 @@
                 audioCtx = new AudioContext();
             }
 
+            // Clear any existing timer to prevent multiple intervals running at once
+            if (typingTimer) {
+                clearInterval(typingTimer);
+            }
+
             isTypingTest = true;
             hasStartedTyping = false;
             wpmHistory = [];
