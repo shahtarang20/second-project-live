@@ -28,6 +28,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Confetti JS for Gamification -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Chart.js for Typing Test Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -249,22 +251,55 @@
             </div>
 
             <!-- Typing Test Game Board (Hidden by default) -->
-            <div id="typingTestBoard"
-                class="hidden flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 border-emerald-500 overflow-hidden min-h-[150px] relative mb-6">
-                <div
-                    class="absolute top-4 right-6 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold px-4 py-1 rounded-full text-xl shadow-sm border border-emerald-200 dark:border-emerald-700">
-                    <span id="typingTimer">60</span>s
-                </div>
-                <div class="p-6">
-                    <h3 class="text-sm font-bold text-emerald-600 uppercase tracking-wide mb-2">Typing Speed Test</h3>
-                    <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">Type the text below as fast as you can.
-                        The timer starts on your first keystroke.</p>
-                    <div id="typingTargetText"
-                        class="text-lg text-slate-800 dark:text-slate-200 font-medium leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-5 rounded-lg border border-slate-200 dark:border-slate-700 select-none">
+            <div id="typingTestBoard" class="hidden flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 border-emerald-500 overflow-hidden min-h-[150px] relative mb-6">
+                
+                <!-- Advanced Settings Bar -->
+                <div class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-3 flex flex-wrap gap-4 items-center justify-between text-sm">
+                    <div class="flex items-center gap-4">
+                        <select id="ttCategory" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <option value="standard">Standard (Quotes)</option>
+                            <option value="code">Developer (Code Snippets)</option>
+                            <option value="numbers">Numbers (Data Entry)</option>
+                        </select>
+                        <select id="ttDuration" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <option value="15">15s Sprint</option>
+                            <option value="30">30s Sprint</option>
+                            <option value="60" selected>60s Standard</option>
+                            <option value="120">120s Endurance</option>
+                        </select>
+                        <label class="flex items-center gap-1 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-red-500 transition-colors" title="Instantly fail on first typo">
+                            <input type="checkbox" id="ttSuddenDeath" class="rounded text-red-500 focus:ring-red-500 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                            <span class="text-xs font-bold uppercase tracking-wider">Sudden Death</span>
+                        </label>
                     </div>
-                    <button onclick="endTypingTest(true)"
-                        class="mt-4 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline font-medium transition-colors">Cancel
-                        Test</button>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-emerald-500 transition-colors" title="Toggle Sound">
+                            <input type="checkbox" id="ttSound" checked class="rounded text-emerald-500 focus:ring-emerald-500 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                        </label>
+                        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400" id="ttLiveWpmContainer">Live WPM: <span id="ttLiveWpm">0</span></span>
+                        <div class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold px-3 py-1 rounded-full shadow-sm border border-emerald-200 dark:border-emerald-700">
+                            <span id="typingTimer">60</span>s
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 relative">
+                    <p class="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold mb-4 flex justify-between">
+                        <span>Type the text below. Timer starts on first keystroke.</span>
+                        <span class="text-indigo-600 dark:text-indigo-400">Personal Best: <span id="ttPersonalBest">0</span> WPM</span>
+                    </p>
+                    
+                    <div id="typingTargetText" class="text-xl text-slate-400 dark:text-slate-600 font-medium leading-relaxed font-mono relative select-none">
+                        <!-- Custom Animated Caret -->
+                        <div id="typingCaret" class="absolute w-0.5 h-6 bg-emerald-500 transition-all duration-100 ease-out hidden"></div>
+                        <div id="typingTextContent" class="break-words"></div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-6">
+                        <button onclick="endTypingTest(true)" class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline font-medium transition-colors">Cancel Test</button>
+                        <button onclick="startTypingTest()" class="text-sm px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded text-slate-700 dark:text-slate-300 font-medium transition-colors">Restart</button>
+                    </div>
                 </div>
             </div>
 
@@ -298,22 +333,27 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-5">Text Statistics</h2>
 
                     <!-- Typing Test Results (Hidden by default) -->
-                    <div id="typingResultsBoard"
-                        class="hidden mb-6 bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 relative overflow-hidden">
+                    <div id="typingResultsBoard" class="hidden mb-6 bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                        <h3
-                            class="text-emerald-800 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-4">
-                            Test Results</h3>
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-slate-700 dark:text-slate-300 font-medium">Speed (WPM):</span>
-                            <span id="resultWPM"
-                                class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">0</span>
+                        <h3 class="text-emerald-800 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-4 flex justify-between">
+                            <span>Test Results</span>
+                            <span id="newRecordBadge" class="hidden bg-emerald-500 text-white px-2 py-0.5 rounded-full animate-pulse">NEW RECORD!</span>
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block uppercase">Speed</span>
+                                <span id="resultWPM" class="text-4xl font-black text-emerald-600 dark:text-emerald-400">0</span> <span class="text-slate-500 text-sm font-bold">WPM</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block uppercase">Accuracy</span>
+                                <span id="resultAccuracy" class="text-4xl font-black text-emerald-600 dark:text-emerald-400">0%</span>
+                            </div>
                         </div>
-                        <div class="w-full h-px bg-emerald-200/50 dark:bg-emerald-800/30 mb-3"></div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-700 dark:text-slate-300 font-medium">Accuracy:</span>
-                            <span id="resultAccuracy"
-                                class="text-xl font-bold text-emerald-600 dark:text-emerald-400">0%</span>
+
+                        <!-- Chart Canvas -->
+                        <div class="w-full h-32 mt-4">
+                            <canvas id="wpmChart"></canvas>
                         </div>
                     </div>
 
@@ -896,69 +936,185 @@
         }
 
         // --- Typing Test Game Logic ---
-        const quotes = [
-            "The quick brown fox jumps over the lazy dog. This sentence contains every letter in the English alphabet. It is often used for typing practice and testing.",
-            "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take arms against a sea of troubles.",
-            "Success is not final, failure is not fatal: it is the courage to continue that counts. History is written by the victors. A joke is a very serious thing.",
-            "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity.",
-            "The greatest glory in living lies not in never falling, but in rising every time we fall. The way to get started is to quit talking and begin doing."
-        ];
+        const textCategories = {
+            standard: [
+                "The quick brown fox jumps over the lazy dog. This sentence contains every letter in the English alphabet. It is often used for typing practice and testing.",
+                "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take arms against a sea of troubles.",
+                "Success is not final, failure is not fatal: it is the courage to continue that counts. History is written by the victors. A joke is a very serious thing.",
+                "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity."
+            ],
+            code: [
+                "function calculateSpeed(chars, time) { return Math.round((chars / 5) * (60 / time)); } const app = new App();",
+                "<div><p class=\"text-emerald-500 font-bold\">Hello World!</p></div> <script>console.log('DOM Loaded');<\/script>",
+                "import React, { useState, useEffect } from 'react'; export default function App() { const [count, setCount] = useState(0); return <div onClick={() => setCount(count + 1)}>{count}</div>; }"
+            ],
+            numbers: [
+                "48,151,623.42 is the exact revenue projected for Q3. The IP address is 192.168.1.1. We need 500 units by 12:00 PM on 10/24/2026.",
+                "Phone: +1 (555) 867-5309. Account #987-654-3210. The stock rose 15.4% to $245.80. Total volume was 8,432,910 shares."
+            ]
+        };
 
         let isTypingTest = false;
         let typingTimer = null;
+        let selectedDuration = 60;
         let timeLeft = 60;
         let hasStartedTyping = false;
         let currentTargetText = "";
+        
+        let wpmHistory = [];
+        let chartInstance = null;
+        
+        // Audio Context for mechanical clicks
+        let audioCtx = null;
+
+        function playClickSound(isError) {
+            const soundEnabled = document.getElementById('ttSound').checked;
+            if (!soundEnabled) return;
+            
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if(AudioContext) audioCtx = new AudioContext();
+            }
+            if(!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (isError) {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        // Initialize Personal Best
+        let pbWPM = parseInt(localStorage.getItem('pbWPM')) || 0;
+        document.getElementById('ttPersonalBest').innerText = pbWPM;
 
         function startTypingTest() {
+            // Setup Audio Context on user gesture
+            if (!audioCtx && window.AudioContext) {
+                audioCtx = new AudioContext();
+            }
+
             isTypingTest = true;
             hasStartedTyping = false;
-            timeLeft = 60;
+            wpmHistory = [];
+            document.getElementById('ttLiveWpm').innerText = '0';
+            
+            // Read settings
+            selectedDuration = parseInt(document.getElementById('ttDuration').value);
+            timeLeft = selectedDuration;
+            
+            const category = document.getElementById('ttCategory').value;
+            const texts = textCategories[category];
+            currentTargetText = texts[Math.floor(Math.random() * texts.length)];
 
             // UI Changes
             document.getElementById('typingTestBoard').classList.remove('hidden');
             document.getElementById('typingTestBoard').classList.add('flex');
             document.getElementById('typingResultsBoard').classList.add('hidden');
             document.getElementById('typingTimer').innerText = timeLeft;
+            document.getElementById('newRecordBadge').classList.add('hidden');
 
-            // Set Target
-            currentTargetText = quotes[Math.floor(Math.random() * quotes.length)];
             renderTargetText("");
 
-            // Clear and prepare editor
+            // Prepare editor
             editor.value = "";
             editor.placeholder = "Start typing the text above... (Timer starts on first key)";
             editor.removeAttribute('readonly');
             editor.focus();
 
-            // Scroll to editor
             document.getElementById('editorContainer').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function renderTargetText(typedVal) {
-            const targetDiv = document.getElementById('typingTargetText');
+            const contentDiv = document.getElementById('typingTextContent');
+            const caret = document.getElementById('typingCaret');
             let html = "";
+            
+            const isSuddenDeath = document.getElementById('ttSuddenDeath').checked;
+            
+            // Calculate Live WPM if started
+            if (hasStartedTyping) {
+                const timeSpent = selectedDuration - timeLeft;
+                if (timeSpent > 0) {
+                    let correctChars = 0;
+                    for (let i = 0; i < typedVal.length && i < currentTargetText.length; i++) {
+                        if (typedVal[i] === currentTargetText[i]) correctChars++;
+                    }
+                    let liveWpm = Math.round((correctChars / 5) * (60 / timeSpent));
+                    document.getElementById('ttLiveWpm').innerText = liveWpm;
+                }
+            }
+
+            // Detect if last char typed was an error for sound/sudden death
+            if (typedVal.length > 0) {
+                const lastIndex = typedVal.length - 1;
+                const isError = typedVal[lastIndex] !== currentTargetText[lastIndex];
+                
+                // Only play sound if this is a new character (basic check)
+                if (typedVal.length !== editor.dataset.lastLen) {
+                    playClickSound(isError);
+                    editor.dataset.lastLen = typedVal.length;
+                }
+                
+                if (isError && isSuddenDeath) {
+                    endTypingTest(false, true); // Fail instantly
+                    return;
+                }
+            } else {
+                editor.dataset.lastLen = 0;
+            }
+
+            // Render Text
             for (let i = 0; i < currentTargetText.length; i++) {
                 const targetChar = currentTargetText[i];
                 const typedChar = typedVal[i];
 
                 if (typedChar === undefined) {
-                    // Not typed yet
-                    html += `<span class="opacity-50">${targetChar}</span>`;
+                    html += `<span id="char-${i}" class="opacity-50">${targetChar}</span>`;
                 } else if (typedChar === targetChar) {
-                    // Correct
-                    html += `<span class="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/30">${targetChar}</span>`;
+                    html += `<span id="char-${i}" class="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/30">${targetChar}</span>`;
                 } else {
-                    // Incorrect
-                    html += `<span class="text-red-500 dark:text-red-400 font-bold bg-red-100 dark:bg-red-900/30">${targetChar}</span>`;
+                    html += `<span id="char-${i}" class="text-red-500 dark:text-red-400 font-bold bg-red-100 dark:bg-red-900/30">${targetChar}</span>`;
                 }
             }
-            targetDiv.innerHTML = html;
+            contentDiv.innerHTML = html;
+            
+            // Caret Animation
+            caret.classList.remove('hidden');
+            // Allow small delay for DOM to render the spans before calculating offset
+            setTimeout(() => {
+                const activeChar = document.getElementById(`char-${typedVal.length}`);
+                if (activeChar) {
+                    caret.style.left = (activeChar.offsetLeft - 1) + 'px';
+                    caret.style.top = activeChar.offsetTop + 'px';
+                    caret.style.height = activeChar.offsetHeight + 'px';
+                } else if (typedVal.length >= currentTargetText.length) {
+                    caret.classList.add('hidden');
+                }
+            }, 0);
         }
 
-        function endTypingTest(cancelled = false) {
+        function endTypingTest(cancelled = false, suddenDeathFail = false) {
             isTypingTest = false;
             clearInterval(typingTimer);
+            document.getElementById('typingCaret').classList.add('hidden');
 
             document.getElementById('typingTestBoard').classList.add('hidden');
             document.getElementById('typingTestBoard').classList.remove('flex');
@@ -966,15 +1122,13 @@
             editor.removeAttribute('readonly');
 
             if (!cancelled) {
-                // Calculate Results
                 const typed = editor.value;
                 let correctChars = 0;
                 for (let i = 0; i < typed.length && i < currentTargetText.length; i++) {
                     if (typed[i] === currentTargetText[i]) correctChars++;
                 }
 
-                // Words = chars / 5 (standard WPM formula). Calculate based on time spent.
-                const timeSpent = 60 - timeLeft;
+                const timeSpent = selectedDuration - timeLeft;
                 const timeMultiplier = timeSpent > 0 ? (60 / timeSpent) : 0;
                 let wpm = Math.round((correctChars / 5) * timeMultiplier);
 
@@ -982,14 +1136,70 @@
                 if (typed.length > 0) {
                     accuracy = Math.round((correctChars / typed.length) * 100);
                 }
+                
+                if (suddenDeathFail) {
+                    wpm = 0;
+                }
 
-                document.getElementById('resultWPM').innerText = wpm;
+                // High Score Logic
+                if (wpm > pbWPM && accuracy >= 80 && !suddenDeathFail) {
+                    pbWPM = wpm;
+                    localStorage.setItem('pbWPM', pbWPM);
+                    document.getElementById('ttPersonalBest').innerText = pbWPM;
+                    document.getElementById('newRecordBadge').classList.remove('hidden');
+                    if(typeof confetti !== 'undefined') triggerConfetti();
+                }
+
+                document.getElementById('resultWPM').innerText = suddenDeathFail ? 'FAILED' : wpm;
+                if(suddenDeathFail) document.getElementById('resultWPM').classList.add('text-red-500');
+                else document.getElementById('resultWPM').classList.remove('text-red-500');
+                
                 document.getElementById('resultAccuracy').innerText = accuracy + "%";
                 document.getElementById('typingResultsBoard').classList.remove('hidden');
+                
+                renderChart();
             } else {
                 editor.value = "";
                 updateStats();
             }
+        }
+        
+        function renderChart() {
+            const ctx = document.getElementById('wpmChart');
+            if (!ctx) return;
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            const labels = Array.from({length: wpmHistory.length}, (_, i) => i + 1 + 's');
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'WPM',
+                        data: wpmHistory,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
+                }
+            });
         }
 
         // Custom Input Listener that handles both Modes
@@ -1004,6 +1214,11 @@
                     typingTimer = setInterval(() => {
                         timeLeft--;
                         document.getElementById('typingTimer').innerText = timeLeft;
+                        
+                        // Log WPM for chart
+                        const currentLiveWpm = parseInt(document.getElementById('ttLiveWpm').innerText) || 0;
+                        wpmHistory.push(currentLiveWpm);
+                        
                         if (timeLeft <= 0) {
                             endTypingTest(false);
                         }
