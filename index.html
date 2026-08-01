@@ -343,7 +343,7 @@
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block uppercase">Speed</span>
-                                <span id="resultWPM" class="text-4xl font-black text-emerald-600 dark:text-emerald-400">0</span> <span class="text-slate-500 text-sm font-bold">WPM</span>
+                                <span id="resultWPM" class="text-4xl font-black text-emerald-600 dark:text-emerald-400">0</span> <span id="resultWPMLabel" class="text-slate-500 text-sm font-bold">WPM</span>
                             </div>
                             <div>
                                 <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block uppercase">Accuracy</span>
@@ -1150,9 +1150,17 @@
                     if(typeof confetti !== 'undefined') triggerConfetti();
                 }
 
-                document.getElementById('resultWPM').innerText = suddenDeathFail ? 'FAILED' : wpm;
-                if(suddenDeathFail) document.getElementById('resultWPM').classList.add('text-red-500');
-                else document.getElementById('resultWPM').classList.remove('text-red-500');
+                if (suddenDeathFail) {
+                    document.getElementById('resultWPM').innerText = 'FAILED';
+                    document.getElementById('resultWPM').classList.remove('text-4xl', 'text-emerald-600', 'dark:text-emerald-400');
+                    document.getElementById('resultWPM').classList.add('text-2xl', 'text-red-500');
+                    document.getElementById('resultWPMLabel').classList.add('hidden');
+                } else {
+                    document.getElementById('resultWPM').innerText = wpm;
+                    document.getElementById('resultWPM').classList.add('text-4xl', 'text-emerald-600', 'dark:text-emerald-400');
+                    document.getElementById('resultWPM').classList.remove('text-2xl', 'text-red-500');
+                    document.getElementById('resultWPMLabel').classList.remove('hidden');
+                }
                 
                 document.getElementById('resultAccuracy').innerText = accuracy + "%";
                 document.getElementById('typingResultsBoard').classList.remove('hidden');
