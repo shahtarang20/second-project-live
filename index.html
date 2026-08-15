@@ -91,6 +91,47 @@
             background-color: #1e293b;
             border-color: #475569;
         }
+
+        /* Writing Analysis (Hemingway-style) overlay */
+        #analysisBackdrop {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            scrollbar-width: none;
+        }
+
+        #analysisBackdrop::-webkit-scrollbar {
+            display: none;
+        }
+
+        #editor.highlight-active {
+            color: transparent;
+            caret-color: #1e293b;
+        }
+
+        .dark #editor.highlight-active {
+            caret-color: #f1f5f9;
+        }
+
+        #analysisBackdrop span.hl-hard {
+            background-color: rgba(250, 204, 21, 0.4);
+            border-radius: 2px;
+        }
+
+        #analysisBackdrop span.hl-veryhard {
+            background-color: rgba(248, 113, 113, 0.45);
+            border-radius: 2px;
+        }
+
+        #analysisBackdrop span.hl-passive {
+            background-color: rgba(74, 222, 128, 0.35);
+            border-bottom: 2px solid #22c55e;
+        }
+
+        #analysisBackdrop span.hl-adverb {
+            background-color: rgba(96, 165, 250, 0.35);
+            border-bottom: 2px solid #3b82f6;
+        }
     </style>
 </head>
 
@@ -214,6 +255,18 @@
 
                 <div class="w-px bg-slate-300 dark:bg-slate-600 mx-1 hidden sm:block"></div>
 
+                <button onclick="toggleWritingAnalysis()" id="writingAnalysisBtn"
+                    class="px-4 py-2 text-sm font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                        </path>
+                    </svg>
+                    <span id="writingAnalysisBtnText">Writing Analysis</span>
+                </button>
+
+                <div class="w-px bg-slate-300 dark:bg-slate-600 mx-1 hidden sm:block"></div>
+
                 <button onclick="startTypingTest()" id="typingTestBtn"
                     class="px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 border border-transparent text-white hover:bg-emerald-600 transition-all shadow-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,8 +359,11 @@
             <!-- Editor -->
             <div id="editorContainer"
                 class="relative flex-grow flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
+                <div id="analysisBackdrop"
+                    class="hidden absolute inset-0 p-6 text-lg text-slate-800 dark:text-slate-100 overflow-y-auto pointer-events-none select-none"
+                    aria-hidden="true"></div>
                 <textarea id="editor"
-                    class="w-full h-full flex-grow p-6 text-lg bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all"
+                    class="relative z-10 w-full h-full flex-grow p-6 text-lg bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all"
                     placeholder="Type or paste your text here, or use the Dictate button to speak..."></textarea>
             </div>
 
@@ -437,6 +493,47 @@
                     </div>
                 </div>
 
+                <!-- Writing Analysis (Hemingway-style) -->
+                <div
+                    class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 relative">
+                    <h2
+                        class="text-sm font-semibold text-slate-900 dark:text-white mb-4 uppercase tracking-wide text-slate-500">
+                        Writing Analysis</h2>
+
+                    <div id="writingAnalysisEmpty" class="text-sm text-slate-500 dark:text-slate-400">
+                        Click <span class="font-semibold text-slate-700 dark:text-slate-300">Writing Analysis</span> above to highlight hard-to-read sentences, passive voice, and adverbs right in your text.
+                    </div>
+
+                    <div id="writingAnalysisResults" class="hidden space-y-4">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-sm shrink-0" style="background-color: rgba(250, 204, 21, 0.7)"></span>
+                                <span class="text-slate-600 dark:text-slate-400">Hard to read</span>
+                            </div>
+                            <span id="countHard" class="text-right font-bold text-slate-800 dark:text-slate-200">0</span>
+
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-sm shrink-0" style="background-color: rgba(248, 113, 113, 0.7)"></span>
+                                <span class="text-slate-600 dark:text-slate-400">Very hard to read</span>
+                            </div>
+                            <span id="countVeryHard" class="text-right font-bold text-slate-800 dark:text-slate-200">0</span>
+
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-sm shrink-0 border-b-2 border-emerald-500" style="background-color: rgba(74, 222, 128, 0.5)"></span>
+                                <span class="text-slate-600 dark:text-slate-400">Passive voice</span>
+                            </div>
+                            <span id="countPassive" class="text-right font-bold text-slate-800 dark:text-slate-200">0</span>
+
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-sm shrink-0 border-b-2 border-blue-500" style="background-color: rgba(96, 165, 250, 0.5)"></span>
+                                <span class="text-slate-600 dark:text-slate-400">Adverbs</span>
+                            </div>
+                            <span id="countAdverb" class="text-right font-bold text-slate-800 dark:text-slate-200">0</span>
+                        </div>
+                        <p id="writingAnalysisSummary" class="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">Looking good.</p>
+                    </div>
+                </div>
+
                 <!-- Keyword Density -->
                 <div
                     class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 relative">
@@ -465,13 +562,124 @@
 
     </div>
 
+    <!-- Homepage Content: About the Tool, How It Works, Features, FAQ -->
+    <div class="container max-w-5xl mx-auto px-4 sm:px-6 py-4">
+
+        <!-- Intro -->
+        <section class="mb-16">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-5">A Free Online Word Counter Built for Writers, Students, and SEO Professionals</h2>
+            <div class="space-y-4 text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+                <p>Most word counters online are slow, cluttered with unnecessary frameworks, and quietly upload whatever you type to a remote server before showing you a number. Easy Word Counter takes a different approach: every statistic on this page — words, characters, sentences, paragraphs, reading time, readability, keyword density — is calculated instantly in your own browser using plain JavaScript. Nothing you type ever leaves your device.</p>
+                <p>That matters whether you're a student trying to hit an exact essay word count, a copywriter tightening a headline for a 280-character limit, or an SEO professional checking that a target keyword isn't overused. Paste your draft, watch the numbers update as you type, and use the built-in writing analysis to catch long sentences, passive voice, and adverb overuse before your reader does.</p>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="mb-16">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-8">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-4">1</div>
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-2">Type, Paste, or Dictate</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Write directly in the editor, paste in an existing draft, or click "Dictate" to speak your text using your browser's built-in speech recognition.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-4">2</div>
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-2">Read Your Stats Instantly</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">The sidebar updates on every keystroke: word and character counts, sentence and paragraph counts, reading and speaking time, readability grade, and top keywords by density.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-4">3</div>
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-2">Revise With Confidence</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Turn on Writing Analysis to highlight hard-to-read sentences and passive voice, set a daily word goal to build a writing habit, or export your finished draft as a .txt file.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Explained -->
+        <section class="mb-16">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-8">Features at a Glance</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">Aa</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Real-Time Word & Character Counts</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Live counts with and without spaces, plus sentence and paragraph totals, so you always know exactly where you stand against a limit.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">Rx</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Flesch-Kincaid Readability Score</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Get an instant reading-grade estimate based on sentence length and syllable complexity, so you can tell if your writing fits your audience.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">%</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Keyword Density Analyzer</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Common stop words are filtered out automatically, leaving a ranked list of your most-used meaningful terms — useful for spotting accidental keyword stuffing.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">✎</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Hemingway-Style Writing Analysis</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Toggle on-page highlighting to flag hard-to-read and very-hard-to-read sentences, passive voice, and adverb overuse as you write.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">🎤</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Voice Dictation</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Speak instead of type using your browser's native speech recognition, with your words appended straight into the editor.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">⌨</div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Typing Speed Test</h3>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">Measure your words-per-minute and accuracy against quotes, code snippets, or number strings, with a live chart and personal-best tracking.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="mb-16">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-8">Frequently Asked Questions</h2>
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-1">What counts as a "word" in this tool?</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Any sequence of non-whitespace characters separated by spaces or line breaks counts as one word — the same method used by most word processors, so your count should match what you'd see in Microsoft Word or Google Docs.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Is there a limit on how much text I can paste in?</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">No hard limit — since everything runs locally in your browser rather than on a server, you can paste in anything from a single tweet to a full manuscript.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Does this tool store or upload my text anywhere?</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">No. There is no backend database and no text is ever sent to our servers. Your daily word goal and typing test personal best are saved only in your own browser's local storage, purely so they persist between visits.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Can I use this to check Twitter/X, Instagram, or LinkedIn limits?</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Yes — the character counts (with and without spaces) update live, so you can watch exactly how close you are to a platform's limit. See our <a href="/article-social-media-lengths.html" class="text-indigo-600 dark:text-indigo-400 hover:underline">social media character length guide</a> for the exact limits per platform.</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-1">Does it work on mobile devices?</h3>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm">Yes. The layout adapts to smaller screens, with core word and character counts pinned to the top of the page so they stay visible while you scroll through a long draft.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
     <!-- CTA Section -->
     <main class="container max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div class="bg-indigo-600 dark:bg-indigo-900/50 rounded-2xl shadow-lg border border-indigo-500 dark:border-indigo-800 p-8 lg:p-12 text-center relative overflow-hidden">
             <!-- Decorative Background Elements -->
             <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-5 blur-2xl"></div>
             <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-white opacity-10 blur-xl"></div>
-            
+
             <div class="relative z-10 max-w-3xl mx-auto">
                 <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Want to improve your writing and SEO?</h2>
                 <p class="text-indigo-100 text-lg mb-8">
@@ -944,6 +1152,7 @@
             isTypingTest = true;
             hasStartedTyping = false;
             wpmHistory = [];
+            analysisBackdrop.classList.add('hidden');
             document.getElementById('ttLiveWpm').innerText = '0';
             
             // Read settings
@@ -1051,6 +1260,11 @@
             editor.placeholder = "Type or paste your text here, or use the Dictate button to speak...";
             editor.removeAttribute('readonly');
 
+            if (writingAnalysisEnabled) {
+                analysisBackdrop.classList.remove('hidden');
+                renderWritingAnalysis();
+            }
+
             if (!cancelled) {
                 const typed = editor.value;
                 let correctChars = 0;
@@ -1140,6 +1354,155 @@
             });
         }
 
+        // --- Writing Analysis (Hemingway-style) ---
+        let writingAnalysisEnabled = false;
+        const analysisBackdrop = document.getElementById('analysisBackdrop');
+
+        const ADVERB_EXCEPTIONS = new Set(['only', 'family', 'supply', 'apply', 'comply', 'reply', 'imply',
+            'rally', 'belly', 'jelly', 'silly', 'bully', 'folly', 'holly', 'ally', 'ugly', 'early', 'friendly',
+            'lovely', 'lonely', 'lively', 'elderly', 'costly', 'deadly', 'likely', 'unlikely', 'monthly',
+            'weekly', 'yearly', 'daily', 'holy', 'italy', 'assembly', 'butterfly', 'anomaly']);
+
+        const PASSIVE_PARTICIPLES = ['born', 'done', 'known', 'shown', 'written', 'given', 'taken', 'made',
+            'said', 'seen', 'found', 'held', 'left', 'felt', 'kept', 'built', 'sent', 'spent', 'brought',
+            'bought', 'caught', 'taught', 'thought', 'understood', 'chosen', 'broken', 'spoken', 'driven',
+            'ridden', 'drawn', 'grown', 'worn', 'torn', 'sworn', 'told', 'sold', 'stolen', 'gone', 'done'];
+
+        const passiveRegex = new RegExp('\\b(?:am|is|are|was|were|be|being|been)\\s+(\\w+ed|' + PASSIVE_PARTICIPLES.join('|') + ')\\b', 'gi');
+        const adverbRegex = /\b(\w+ly)\b/gi;
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function getSentenceRanges(text) {
+            const ranges = [];
+            let start = 0;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '.' || ch === '!' || ch === '?') {
+                    let j = i;
+                    while (j + 1 < text.length && /[.!?]/.test(text[j + 1])) j++;
+                    ranges.push({ start, end: j + 1 });
+                    start = j + 1;
+                    i = j;
+                }
+            }
+            if (start < text.length) ranges.push({ start, end: text.length });
+            return ranges;
+        }
+
+        function buildWritingAnalysis(text) {
+            const counts = { hard: 0, veryHard: 0, passive: 0, adverb: 0 };
+            if (!text) return { html: '', counts };
+
+            const ranges = getSentenceRanges(text);
+            let html = '';
+
+            ranges.forEach(({ start, end }) => {
+                const sentence = text.slice(start, end);
+                const wordCount = (sentence.trim().match(/\S+/g) || []).length;
+
+                let sentenceClass = null;
+                if (wordCount > 25) { sentenceClass = 'hl-veryhard'; counts.veryHard++; }
+                else if (wordCount > 14) { sentenceClass = 'hl-hard'; counts.hard++; }
+
+                // Collect local word-level highlight ranges (passive voice, adverbs)
+                const localRanges = [];
+                let m;
+                passiveRegex.lastIndex = 0;
+                while ((m = passiveRegex.exec(sentence)) !== null) {
+                    localRanges.push({ start: m.index, end: m.index + m[0].length, type: 'hl-passive' });
+                }
+                adverbRegex.lastIndex = 0;
+                while ((m = adverbRegex.exec(sentence)) !== null) {
+                    const word = m[1].toLowerCase();
+                    if (!ADVERB_EXCEPTIONS.has(word)) {
+                        localRanges.push({ start: m.index, end: m.index + m[0].length, type: 'hl-adverb' });
+                    }
+                }
+                localRanges.sort((a, b) => a.start - b.start);
+
+                // Drop overlaps
+                const cleanRanges = [];
+                let lastEnd = 0;
+                localRanges.forEach(r => {
+                    if (r.start >= lastEnd) {
+                        cleanRanges.push(r);
+                        lastEnd = r.end;
+                        if (r.type === 'hl-passive') counts.passive++;
+                        else counts.adverb++;
+                    }
+                });
+
+                // Build inner HTML with word-level spans
+                let inner = '';
+                let cursor = 0;
+                cleanRanges.forEach(r => {
+                    inner += escapeHtml(sentence.slice(cursor, r.start));
+                    inner += `<span class="${r.type}">${escapeHtml(sentence.slice(r.start, r.end))}</span>`;
+                    cursor = r.end;
+                });
+                inner += escapeHtml(sentence.slice(cursor));
+
+                html += sentenceClass ? `<span class="${sentenceClass}">${inner}</span>` : inner;
+            });
+
+            return { html, counts };
+        }
+
+        function renderWritingAnalysis() {
+            if (!writingAnalysisEnabled) return;
+            const { html, counts } = buildWritingAnalysis(editor.value);
+            analysisBackdrop.innerHTML = html;
+            analysisBackdrop.scrollTop = editor.scrollTop;
+
+            document.getElementById('countHard').textContent = counts.hard;
+            document.getElementById('countVeryHard').textContent = counts.veryHard;
+            document.getElementById('countPassive').textContent = counts.passive;
+            document.getElementById('countAdverb').textContent = counts.adverb;
+
+            const total = counts.hard + counts.veryHard + counts.passive + counts.adverb;
+            const summaryEl = document.getElementById('writingAnalysisSummary');
+            if (!editor.value.trim()) {
+                summaryEl.textContent = 'Start typing to see your writing analysis.';
+            } else if (total === 0) {
+                summaryEl.textContent = 'Looking good — no issues detected.';
+            } else {
+                summaryEl.textContent = `${total} issue${total === 1 ? '' : 's'} found. Aim to trim long sentences and cut adverbs.`;
+            }
+        }
+
+        function toggleWritingAnalysis() {
+            writingAnalysisEnabled = !writingAnalysisEnabled;
+            const btn = document.getElementById('writingAnalysisBtn');
+            const btnText = document.getElementById('writingAnalysisBtnText');
+
+            if (writingAnalysisEnabled) {
+                editor.classList.add('highlight-active');
+                analysisBackdrop.classList.remove('hidden');
+                document.getElementById('writingAnalysisEmpty').classList.add('hidden');
+                document.getElementById('writingAnalysisResults').classList.remove('hidden');
+                btn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-300', 'dark:bg-indigo-900/30', 'dark:text-indigo-400');
+                btnText.textContent = 'Hide Analysis';
+                renderWritingAnalysis();
+            } else {
+                editor.classList.remove('highlight-active');
+                analysisBackdrop.classList.add('hidden');
+                document.getElementById('writingAnalysisEmpty').classList.remove('hidden');
+                document.getElementById('writingAnalysisResults').classList.add('hidden');
+                btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'border-indigo-300', 'dark:bg-indigo-900/30', 'dark:text-indigo-400');
+                btnText.textContent = 'Writing Analysis';
+            }
+        }
+
+        editor.addEventListener('scroll', function () {
+            if (writingAnalysisEnabled) {
+                analysisBackdrop.scrollTop = editor.scrollTop;
+            }
+        });
+
         // Custom Input Listener that handles both Modes
         editor.addEventListener('input', function (e) {
             if (isTypingTest) {
@@ -1169,6 +1532,7 @@
                 }
             } else {
                 updateStats();
+                renderWritingAnalysis();
             }
         });
 
